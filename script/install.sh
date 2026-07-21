@@ -122,20 +122,20 @@ pre_check() {
     fi
 
     if [ -n "$CUSTOM_MIRROR" ]; then
-        GITHUB_RAW_URL="raw.githubusercontent.com/${NEZHA_REPOSITORY}/${NEZHA_BRANCH}/script"
+        GITHUB_RAW_URL="raw.githubusercontent.com/${NEZHA_REPOSITORY}/refs/heads/${NEZHA_BRANCH}/script"
         GITHUB_URL=$CUSTOM_MIRROR
         Get_Docker_URL="get.docker.com"
         Get_Docker_Argu=" -s docker --mirror Aliyun"
         Docker_IMG="ghcr.io\/zedware-hk\/nezha-dashboard:${NEZHA_DASHBOARD_VERSION}"
     else
         if [ -z "$CN" ]; then
-            GITHUB_RAW_URL="raw.githubusercontent.com/${NEZHA_REPOSITORY}/${NEZHA_BRANCH}/script"
+            GITHUB_RAW_URL="raw.githubusercontent.com/${NEZHA_REPOSITORY}/refs/heads/${NEZHA_BRANCH}/script"
             GITHUB_URL="github.com"
             Get_Docker_URL="get.docker.com"
             Get_Docker_Argu=" "
             Docker_IMG="ghcr.io\/zedware-hk\/nezha-dashboard:${NEZHA_DASHBOARD_VERSION}"
         else
-            GITHUB_RAW_URL="raw.githubusercontent.com/${NEZHA_REPOSITORY}/${NEZHA_BRANCH}/script"
+            GITHUB_RAW_URL="raw.githubusercontent.com/${NEZHA_REPOSITORY}/refs/heads/${NEZHA_BRANCH}/script"
             GITHUB_URL="github.com"
             Get_Docker_URL="get.docker.com"
             Get_Docker_Argu=" -s docker --mirror Aliyun"

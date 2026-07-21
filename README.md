@@ -38,7 +38,7 @@
 ### 安装
 
 ```sh
-curl -L https://raw.githubusercontent.com/ZedWAre-HK/nezha/v0-final/script/install.sh -o nezha.sh
+curl -L https://raw.githubusercontent.com/ZedWAre-HK/nezha/refs/heads/v0-final/script/install.sh -o nezha.sh
 chmod +x nezha.sh
 sudo ./nezha.sh
 ```
