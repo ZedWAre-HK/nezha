@@ -79,16 +79,8 @@ func (oa *oauth2controller) getCommonOauth2Config(c *gin.Context) *oauth2.Config
 			RedirectURL: oa.getRedirectURL(c),
 		}
 	} else if singleton.Conf.Oauth2.Type == model.ConfigTypeCloudflare {
-		return &oauth2.Config{
-			ClientID:     singleton.Conf.Oauth2.ClientID,
-			ClientSecret: singleton.Conf.Oauth2.ClientSecret,
-			Scopes:       []string{"openid", "email", "profile", "groups"},
-			Endpoint: oauth2.Endpoint{
-				AuthURL:  fmt.Sprintf("%s/cdn-cgi/access/sso/oidc/%s/authorization", singleton.Conf.Oauth2.Endpoint, singleton.Conf.Oauth2.ClientID),
-				TokenURL: fmt.Sprintf("%s/cdn-cgi/access/sso/oidc/%s/token", singleton.Conf.Oauth2.Endpoint, singleton.Conf.Oauth2.ClientID),
-			},
-			RedirectURL: oa.getRedirectURL(c),
-		}
+		return cloudflare.OAuth2Config(singleton.Conf.Oauth2.Endpoint, singleton.Conf.Oauth2.ClientID,
+			singleton.Conf.Oauth2.ClientSecret, oa.getRedirectURL(c))
 	} else if singleton.Conf.Oauth2.Type == model.ConfigTypeOidc {
 		var err error
 		oa.oidcProvider, err = oidc.NewProvider(c.Request.Context(), singleton.Conf.Oauth2.OidcIssuer)
@@ -194,13 +186,11 @@ func (oa *oauth2controller) callback(c *gin.Context) {
 			}
 		} else if singleton.Conf.Oauth2.Type == model.ConfigTypeCloudflare {
 			client := oauth2Config.Client(context.Background(), otk)
-			resp, err := client.Get(fmt.Sprintf("%s/cdn-cgi/access/sso/oidc/%s/userinfo", singleton.Conf.Oauth2.Endpoint, singleton.Conf.Oauth2.ClientID))
+			var cloudflareUserInfo cloudflare.UserInfo
+			cloudflareUserInfo, err = cloudflare.FetchUserInfo(c.Request.Context(), client,
+				singleton.Conf.Oauth2.Endpoint, singleton.Conf.Oauth2.ClientID)
 			if err == nil {
-				defer resp.Body.Close()
-				var cloudflareUserInfo *cloudflare.UserInfo
-				if err := utils.Json.NewDecoder(resp.Body).Decode(&cloudflareUserInfo); err == nil {
-					user = cloudflareUserInfo.MapToNezhaUser()
-				}
+				user = cloudflareUserInfo.MapToNezhaUser()
 			}
 		} else if singleton.Conf.Oauth2.Type == model.ConfigTypeOidc {
 			userInfo, err := oa.oidcProvider.UserInfo(c.Request.Context(), oauth2.StaticTokenSource(otk))
@@ -251,7 +241,10 @@ func (oa *oauth2controller) callback(c *gin.Context) {
 		isAdmin = true
 	} else {
 		for _, admin := range strings.Split(singleton.Conf.Oauth2.Admin, ",") {
-			if admin != "" && strings.EqualFold(user.Login, admin) {
+			admin = strings.TrimSpace(admin)
+			cloudflareEmailMatch := singleton.Conf.Oauth2.Type == model.ConfigTypeCloudflare &&
+				strings.EqualFold(user.Email, admin)
+			if admin != "" && (strings.EqualFold(user.Login, admin) || cloudflareEmailMatch) {
 				isAdmin = true
 				break
 			}

@@ -3,11 +3,11 @@ httpport: 80
 language: nz_language
 grpcport: nz_grpc_port
 oauth2:
-  type: "nz_oauth2_type" #Oauth2 登录接入类型，github/gitlab/jihulab/gitee/gitea
-  admin: "nz_admin_logins" #管理员列表，半角逗号隔开
-  clientid: "nz_github_oauth_client_id" # 在 https://github.com/settings/developers 创建，无需审核 Callback 填 http(s)://域名或IP/oauth2/callback
+  type: "nz_oauth2_type" # OAuth2 登录类型：github/gitlab/jihulab/gitee/gitea/cloudflare/oidc
+  admin: "nz_admin_logins" # 管理员登录名，Cloudflare 填邮箱；多个值用半角逗号隔开
+  clientid: "nz_github_oauth_client_id"
   clientsecret: "nz_github_oauth_client_secret"
-  endpoint: "" # 如gitea自建需要设置
+  endpoint: "nz_oauth2_endpoint" # Gitea 填实例地址；Cloudflare 填 https://<team-name>.cloudflareaccess.com
 site:
   brand: "nz_site_title"
   cookiename: "nezha-dashboard" #浏览器 Cookie 字段名，可不改

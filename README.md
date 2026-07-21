@@ -11,6 +11,40 @@
   <p>Supports <b>monitoring</b> system status, HTTP (SSL certificate change, upcoming expiration, expired), TCP, Ping and supports <b>push alerts</b>, run scheduled tasks and <b>web terminal</b>.</p>
 </div>
 
+## Cloudflare Access OAuth2 增强版
+
+本 fork 基于上游 `v0-final`，目标是在保留 v0 Dashboard 数据结构和使用方式的前提下，补全 Cloudflare Access 作为 OAuth2/OIDC 登录提供方的能力。所有修改只发布在 `ZedWAre-HK/nezha`，不会向上游创建 Pull Request。
+
+### 修改了什么
+
+- 将 Cloudflare Access 的 Authorization、Token、UserInfo 三个 OIDC 端点封装为独立实现，自动根据 team endpoint 和 Client ID 生成完整 URL。
+- 对 UserInfo 响应增加 HTTP 状态、JSON 格式和必需 `sub` claim 校验，错误会进入原有登录失败页面，而不是被静默忽略。
+- 继续使用 `sub` 作为数据库中的稳定用户标识，同时允许 `oauth2.admin` 使用更直观的邮箱地址进行管理员白名单匹配，兼容旧数据和旧的 `sub` 配置。
+- 增加 Cloudflare endpoint 必填校验、单元测试、配置示例及 [详细配置文档](CLOUDFLARE_ACCESS.md)。
+- 将完整 v0 安装器纳入本仓库。安装器、自更新、配置模板、Dashboard Release 和 Docker 镜像均指向此 fork，不会安装回未修改的上游 Dashboard。
+
+### 为什么这样修改
+
+上游 `v0-final` 虽然已有 Cloudflare 分支代码，但配置模板和安装脚本没有形成完整可部署链路，UserInfo 请求失败时也缺少可靠诊断。原 v0 安装入口还会跳转到 `nezhahq/scripts`，并固定下载上游 `v0.20.13`，因此只修改 Go 源码并不能让实际安装得到新功能。本 fork 同时修改认证代码、发布流程与安装入口，保证源码、二进制、镜像和配置来自同一版本。
+
+### 登录原理
+
+1. 用户点击登录后，Dashboard 生成一次性 `state` 并跳转到 Cloudflare Access Authorization endpoint。
+2. Cloudflare Access 按 Access Policy 完成身份验证，将授权码回调到 `/oauth2/callback`。
+3. Dashboard 校验 `state`，使用授权码和 Client Secret 从 Token endpoint 换取 Access Token。
+4. Dashboard 使用 Access Token 请求 UserInfo endpoint，以 `sub` 定位用户，并用 `sub` 或邮箱匹配 `oauth2.admin` 管理员白名单。
+5. 匹配成功后，Dashboard 签发自身会话 Cookie；Cloudflare Token 不会被作为哪吒的长期登录 Cookie 保存。
+
+### 安装
+
+```sh
+curl -L https://raw.githubusercontent.com/ZedWAre-HK/nezha/v0-final/script/install.sh -o nezha.sh
+chmod +x nezha.sh
+sudo ./nezha.sh
+```
+
+选择 `cloudflare` 后填写 Cloudflare Access Client ID、Client Secret、管理员邮箱和 team endpoint，例如 `https://example.cloudflareaccess.com`。Cloudflare SaaS OIDC 应用中的 Redirect URL 必须填写 `https://<面板域名>/oauth2/callback`，Scopes 至少启用 `openid`、`email` 和 `profile`。
+
 \>> Telegram Channel: [哪吒监控（中文通知频道）](https://t.me/nezhanews)
 
 \>> Telegram Group: [Nezha Monitoring Global (English Only)](https://t.me/nezhamonitoring_global), [哪吒监控（中文群组）](https://t.me/nezhamonitoring)
@@ -21,6 +55,7 @@
 
 - [English](https://nezhahq.github.io/en_US/index.html)
 - [中文文档](https://nezhahq.github.io/index.html)
+- [Cloudflare Access OAuth2/OIDC 登录配置](CLOUDFLARE_ACCESS.md)
 
 ## Screenshots
 

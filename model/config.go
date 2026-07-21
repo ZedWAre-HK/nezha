@@ -136,6 +136,9 @@ func (c *Config) Read(path string) error {
 	if c.Oauth2.Type == "" || c.Oauth2.Admin == "" || c.Oauth2.ClientID == "" || c.Oauth2.ClientSecret == "" {
 		return errors.New("missing oauth2 config")
 	}
+	if c.Oauth2.Type == ConfigTypeCloudflare && strings.TrimSpace(c.Oauth2.Endpoint) == "" {
+		return errors.New("missing Cloudflare Access team endpoint")
+	}
 
 	if c.Site.Brand == "" {
 		c.Site.Brand = "Nezha Monitoring"
