@@ -3,7 +3,7 @@
 
 NEZHA_REPOSITORY="ZedWAre-HK/nezha"
 NEZHA_BRANCH="v0-final"
-NEZHA_DASHBOARD_VERSION="v0.20.13-cloudflare.1"
+NEZHA_DASHBOARD_VERSION="v0.20.13-cloudflare.2"
 
 NZ_BASE_PATH="/opt/nezha"
 NZ_DASHBOARD_PATH="${NZ_BASE_PATH}/dashboard"
