@@ -15,6 +15,15 @@ func TestOAuth2Config(t *testing.T) {
 	if config.Endpoint.TokenURL != "https://example.cloudflareaccess.com/cdn-cgi/access/sso/oidc/client-id/token" {
 		t.Fatalf("unexpected token URL: %s", config.Endpoint.TokenURL)
 	}
+	wantScopes := []string{"openid", "email", "profile"}
+	if len(config.Scopes) != len(wantScopes) {
+		t.Fatalf("unexpected scopes: %#v", config.Scopes)
+	}
+	for i, scope := range wantScopes {
+		if config.Scopes[i] != scope {
+			t.Fatalf("unexpected scopes: %#v", config.Scopes)
+		}
+	}
 }
 
 func TestFetchUserInfo(t *testing.T) {

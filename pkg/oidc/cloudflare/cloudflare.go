@@ -28,7 +28,7 @@ func OAuth2Config(endpoint, clientID, clientSecret, redirectURL string) *oauth2.
 	return &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
-		Scopes:       []string{"openid", "email", "profile", "groups"},
+		Scopes:       []string{"openid", "email", "profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  baseURL + "/authorization",
 			TokenURL: baseURL + "/token",

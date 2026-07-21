@@ -7,7 +7,7 @@
 1. 进入 Cloudflare Zero Trust 控制台的 **Access controls > Applications**。
 2. 创建 **SaaS application**，协议选择 **OIDC**。
 3. Redirect URL 填写 `https://<哪吒面板域名>/oauth2/callback`。
-4. Scopes 启用 `openid`、`email`、`profile`，需要组信息时再启用 `groups`。
+4. Scopes 只启用 `openid`、`email`、`profile`。此登录流程不请求 `groups`，以兼容未提供组 claim 的身份提供程序。
 5. 创建允许登录面板的 Access policy。
 6. 保存以下值：Client ID、Client secret 和团队域名，例如 `https://my-team.cloudflareaccess.com`。
 

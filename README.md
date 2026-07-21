@@ -43,7 +43,7 @@ chmod +x nezha.sh
 sudo ./nezha.sh
 ```
 
-选择 `cloudflare` 后填写 Cloudflare Access Client ID、Client Secret、管理员邮箱和 team endpoint，例如 `https://example.cloudflareaccess.com`。Cloudflare SaaS OIDC 应用中的 Redirect URL 必须填写 `https://<面板域名>/oauth2/callback`，Scopes 至少启用 `openid`、`email` 和 `profile`。
+选择 `cloudflare` 后填写 Cloudflare Access Client ID、Client Secret、管理员邮箱和 team endpoint，例如 `https://example.cloudflareaccess.com`。Cloudflare SaaS OIDC 应用中的 Redirect URL 必须填写 `https://<面板域名>/oauth2/callback`，Scopes 启用 `openid`、`email` 和 `profile`，不要启用或请求 `groups`。
 
 \>> Telegram Channel: [哪吒监控（中文通知频道）](https://t.me/nezhanews)
 
