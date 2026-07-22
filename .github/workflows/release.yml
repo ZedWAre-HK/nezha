@@ -10,7 +10,46 @@ permissions:
   packages: write
 
 jobs:
+  prepare-geoip:
+    name: Prepare GeoIP database
+    runs-on: ubuntu-latest
+    env:
+      IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download and validate IPInfo GeoIP database
+        shell: bash
+        run: |
+          if [[ -z "${IPINFO_TOKEN}" ]]; then
+            echo "::error::IPINFO_TOKEN is required to build a release with working country detection."
+            exit 1
+          fi
+
+          database="$(mktemp)"
+          trap 'rm -f "${database}"' EXIT
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output "${database}" \
+            "https://ipinfo.io/data/free/country.mmdb?token=${IPINFO_TOKEN}"
+
+          database_size="$(wc -c < "${database}")"
+          if [[ "${database_size}" -lt 1000000 ]] || ! grep -a -q "MaxMind.com" "${database}"; then
+            echo "::error::Downloaded GeoIP database is invalid (${database_size} bytes)."
+            exit 1
+          fi
+
+          mv "${database}" pkg/geoip/geoip.db
+
+      - name: Upload GeoIP database
+        uses: actions/upload-artifact@v4
+        with:
+          name: geoip-database
+          path: pkg/geoip/geoip.db
+          retention-days: 1
+          if-no-files-found: error
+
   build:
+    needs: prepare-geoip
     strategy:
       fail-fast: true
       matrix:
@@ -30,18 +69,17 @@ jobs:
       GOOS: ${{ matrix.goos }}
       GOARCH: ${{ matrix.goarch }}
       GOARM: ${{ matrix.goarm }}
-      IPINFO_TOKEN: ${{ secrets.IPINFO_TOKEN }}
     outputs:
       tag_name: ${{ steps.extract_branch.outputs.tag }}
     steps:
       - run: git config --global --add safe.directory /__w/nezha/nezha
       - uses: actions/checkout@v4
 
-      - name: Fetch IPInfo GeoIP Database
-        if: ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags/') && env.IPINFO_TOKEN != '' }}
-        run: |
-          rm pkg/geoip/geoip.db
-          wget -qO pkg/geoip/geoip.db https://ipinfo.io/data/free/country.mmdb?token=${IPINFO_TOKEN}
+      - name: Download GeoIP database
+        uses: actions/download-artifact@v4
+        with:
+          name: geoip-database
+          path: pkg/geoip
 
       - name: Set up Go
         uses: actions/setup-go@v5

@@ -43,6 +43,18 @@ chmod +x nezha.sh
 sudo ./nezha.sh
 ```
 
+### GeoIP 发布前置条件
+
+Agent 会独立通过 Cloudflare Trace 获取公网 IPv4/IPv6，再把该公网 IP 发送给
+Dashboard 查询国家代码。Dashboard 地址（包括 `127.0.0.1`）只是 gRPC 连接目标，
+不会被当作 GeoIP 查询地址。
+
+源码中的 `pkg/geoip/geoip.db` 是一个仅有 4 字节的占位文件。发布前必须在 fork 的
+Actions 仓库 Secret 中配置 `IPINFO_TOKEN`，由发布工作流下载 IPInfo Country MMDB。
+工作流只下载一次数据库，校验文件大小和 MMDB 元数据标记后，再提供给所有目标平台
+构建。Token 缺失或下载内容无效时，发布会明确失败，不再生成所有 Agent 都无法识别
+国家或地区、但表面上可以正常启动的 Dashboard 二进制文件。
+
 选择 `cloudflare` 后填写 Cloudflare Access Client ID、Client Secret、管理员邮箱和 team endpoint，例如 `https://example.cloudflareaccess.com`。Cloudflare SaaS OIDC 应用中的 Redirect URL 必须填写 `https://<面板域名>/oauth2/callback`，Scopes 启用 `openid`、`email` 和 `profile`，不要启用或请求 `groups`。
 
 \>> Telegram Channel: [哪吒监控（中文通知频道）](https://t.me/nezhanews)
