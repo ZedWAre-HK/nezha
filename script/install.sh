@@ -595,6 +595,9 @@ update_docker_compose_image() {
     if grep -q "ghcr.io/naiba/nezha-dashboard" "$yaml_file_path"; then
         sed -i "s|ghcr.io/naiba/nezha-dashboard[^[:space:]]*|ghcr.io/zedware-hk/nezha-dashboard:${NEZHA_DASHBOARD_VERSION}|" "$yaml_file_path"
     fi
+    if grep -q "ghcr.io/zedware-hk/nezha-dashboard" "$yaml_file_path"; then
+        sed -i "s|ghcr.io/zedware-hk/nezha-dashboard[^[:space:]]*|ghcr.io/zedware-hk/nezha-dashboard:${NEZHA_DASHBOARD_VERSION}|" "$yaml_file_path"
+    fi
 }
 
 restart_and_update_standalone() {
