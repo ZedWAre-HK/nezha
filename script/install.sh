@@ -7,7 +7,6 @@ NEZHA_DASHBOARD_VERSION="v0.20.13-cloudflare.4"
 
 NZ_BASE_PATH="/opt/nezha"
 NZ_DASHBOARD_PATH="${NZ_BASE_PATH}/dashboard"
-NZ_DASHBOARD_COMPOSE_FILE="${NZ_DASHBOARD_PATH}/docker-compose.yaml"
 NZ_AGENT_PATH="${NZ_BASE_PATH}/agent"
 NZ_DASHBOARD_SERVICE="/etc/systemd/system/nezha-dashboard.service"
 NZ_DASHBOARD_SERVICERC="/etc/init.d/nezha-dashboard"
@@ -146,33 +145,39 @@ pre_check() {
 }
 
 installation_check() {
-    if command -v docker >/dev/null 2>&1 && sudo docker compose version >/dev/null 2>&1; then
+    if docker compose version >/dev/null 2>&1; then
         DOCKER_COMPOSE_COMMAND="docker compose"
+        if sudo $DOCKER_COMPOSE_COMMAND ls | grep -qw "$NZ_DASHBOARD_PATH/docker-compose.yaml" >/dev/null 2>&1; then
+            NEZHA_IMAGES=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep -w "nezha-dashboard")
+            if [ -n "$NEZHA_IMAGES" ]; then
+                echo "存在带有 nezha-dashboard 仓库的 Docker 镜像："
+                echo "$NEZHA_IMAGES"
+                IS_DOCKER_NEZHA=1
+                FRESH_INSTALL=0
+                return
+            else
+                echo "未找到带有 nezha-dashboard 仓库的 Docker 镜像。"
+            fi
+        fi
     elif command -v docker-compose >/dev/null 2>&1; then
         DOCKER_COMPOSE_COMMAND="docker-compose"
+        if sudo $DOCKER_COMPOSE_COMMAND -f "$NZ_DASHBOARD_PATH/docker-compose.yaml" config >/dev/null 2>&1; then
+            NEZHA_IMAGES=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep -w "nezha-dashboard")
+            if [ -n "$NEZHA_IMAGES" ]; then
+                echo "存在带有 nezha-dashboard 仓库的 Docker 镜像："
+                echo "$NEZHA_IMAGES"
+                IS_DOCKER_NEZHA=1
+                FRESH_INSTALL=0
+                return
+            else
+                echo "未找到带有 nezha-dashboard 仓库的 Docker 镜像。"
+            fi
+        fi
     fi
 
-    has_docker_install=0
-    has_standalone_install=0
-    [ -f "$NZ_DASHBOARD_COMPOSE_FILE" ] && has_docker_install=1
-    if [ -f "$NZ_DASHBOARD_PATH/app" ] || [ -f "$NZ_DASHBOARD_SERVICE" ] || [ -f "$NZ_DASHBOARD_SERVICERC" ]; then
-        has_standalone_install=1
-    fi
-
-    if [ "$has_docker_install" = 1 ] && [ "$has_standalone_install" = 0 ]; then
-        IS_DOCKER_NEZHA=1
-        FRESH_INSTALL=0
-        return
-    fi
-
-    if [ "$has_standalone_install" = 1 ] && [ "$has_docker_install" = 0 ]; then
+    if [ -f "$NZ_DASHBOARD_PATH/app" ]; then
         IS_DOCKER_NEZHA=0
         FRESH_INSTALL=0
-        return
-    fi
-
-    if [ "$has_docker_install" = 1 ] && [ "$has_standalone_install" = 1 ]; then
-        info "同时检测到 Docker 与独立安装文件，请确认当前使用的安装方式。"
     fi
 }
 
@@ -572,19 +577,10 @@ restart_and_update() {
 }
 
 restart_and_update_docker() {
-    if [ ! -f "$NZ_DASHBOARD_COMPOSE_FILE" ]; then
-        err "未找到 Docker Compose 配置：$NZ_DASHBOARD_COMPOSE_FILE"
-        return 1
-    fi
-    if [ -z "$DOCKER_COMPOSE_COMMAND" ]; then
-        err "未找到 docker compose 或 docker-compose 命令。"
-        return 1
-    fi
-
     update_docker_compose_image
-    sudo $DOCKER_COMPOSE_COMMAND -f "$NZ_DASHBOARD_COMPOSE_FILE" pull &&
-        sudo $DOCKER_COMPOSE_COMMAND -f "$NZ_DASHBOARD_COMPOSE_FILE" down &&
-        sudo $DOCKER_COMPOSE_COMMAND -f "$NZ_DASHBOARD_COMPOSE_FILE" up -d
+    sudo $DOCKER_COMPOSE_COMMAND -f ${NZ_DASHBOARD_PATH}/docker-compose.yaml pull
+    sudo $DOCKER_COMPOSE_COMMAND -f ${NZ_DASHBOARD_PATH}/docker-compose.yaml down
+    sudo $DOCKER_COMPOSE_COMMAND -f ${NZ_DASHBOARD_PATH}/docker-compose.yaml up -d
 }
 
 update_docker_compose_image() {
@@ -595,18 +591,10 @@ update_docker_compose_image() {
     if grep -q "ghcr.io/naiba/nezha-dashboard" "$yaml_file_path"; then
         sed -i "s|ghcr.io/naiba/nezha-dashboard[^[:space:]]*|ghcr.io/zedware-hk/nezha-dashboard:${NEZHA_DASHBOARD_VERSION}|" "$yaml_file_path"
     fi
-    if grep -q "ghcr.io/zedware-hk/nezha-dashboard" "$yaml_file_path"; then
-        sed -i "s|ghcr.io/zedware-hk/nezha-dashboard[^[:space:]]*|ghcr.io/zedware-hk/nezha-dashboard:${NEZHA_DASHBOARD_VERSION}|" "$yaml_file_path"
-    fi
 }
 
 restart_and_update_standalone() {
     _version="${NEZHA_DASHBOARD_VERSION}"
-
-    if [ ! -f "$NZ_DASHBOARD_PATH/app" ] && [ ! -f "$NZ_DASHBOARD_SERVICE" ] && [ ! -f "$NZ_DASHBOARD_SERVICERC" ]; then
-        err "未检测到独立安装的 Dashboard；如果面板运行在 Docker 中，请选择 Docker 安装方式。"
-        return 1
-    fi
 
     if [ -z "$_version" ]; then
         err "获取 Dashboard 版本号失败，请检查本机能否连接 https://github.com/${NEZHA_REPOSITORY}"
@@ -911,7 +899,6 @@ pre_check
 installation_check
 
 if [ $# -gt 0 ]; then
-    select_version
     case $1 in
         "install_dashboard")
             install_dashboard 0
