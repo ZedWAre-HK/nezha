@@ -55,6 +55,14 @@ Actions 仓库 Secret 中配置 `IPINFO_TOKEN`，由发布工作流下载 IPInfo
 构建。Token 缺失或下载内容无效时，发布会明确失败，不再生成所有 Agent 都无法识别
 国家或地区、但表面上可以正常启动的 Dashboard 二进制文件。
 
+### 安装类型检测
+
+更新器会根据现有 Docker Compose 配置、Dashboard 二进制和 service 文件判断安装
+类型，不再依赖 `docker compose ls` 是否列出项目。这样可以兼容由旧版
+`docker-compose` 创建、当前已经停止或尚未被新版 Compose 插件列出的面板。Docker
+与独立安装文件同时存在时才要求人工选择；选错独立安装时也会在停止服务前终止，
+不会再尝试操作不存在的 `nezha-dashboard.service`。
+
 选择 `cloudflare` 后填写 Cloudflare Access Client ID、Client Secret、管理员邮箱和 team endpoint，例如 `https://example.cloudflareaccess.com`。Cloudflare SaaS OIDC 应用中的 Redirect URL 必须填写 `https://<面板域名>/oauth2/callback`，Scopes 启用 `openid`、`email` 和 `profile`，不要启用或请求 `groups`。
 
 \>> Telegram Channel: [哪吒监控（中文通知频道）](https://t.me/nezhanews)
