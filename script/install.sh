@@ -911,6 +911,7 @@ pre_check
 installation_check
 
 if [ $# -gt 0 ]; then
+    select_version
     case $1 in
         "install_dashboard")
             install_dashboard 0
